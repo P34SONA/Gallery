@@ -1,43 +1,235 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Advanced Photo Gallery</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Responsive Image Gallery</title>
+
+<style>
+/* =======================
+   CSS VARIABLES (EASY CUSTOMIZATION)
+======================= */
+:root {
+  --bg: #f4f4f4;
+  --text: #111;
+  --card: #ffffff;
+  --accent: #4f46e5;
+}
+
+body.dark {
+  --bg: #0f172a;
+  --text: #f8fafc;
+  --card: #1e293b;
+  --accent: #facc15;
+}
+
+/* =======================
+   GLOBAL STYLES
+======================= */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  transition: background 0.4s, color 0.4s;
+}
+
+.container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 20px;
+}
+
+/* =======================
+   HEADER
+======================= */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.header h1 {
+  font-size: 1.5rem;
+}
+
+/* =======================
+   DARK MODE TOGGLE
+======================= */
+.toggle {
+  width: 60px;
+  height: 30px;
+  background: var(--card);
+  border-radius: 50px;
+  position: relative;
+  cursor: pointer;
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
+}
+
+.toggle-circle {
+  width: 26px;
+  height: 26px;
+  background: var(--accent);
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: #fff;
+  transition: transform 0.4s;
+}
+
+body.dark .toggle-circle {
+  transform: translateX(30px);
+}
+
+/* =======================
+   UPLOAD BUTTON
+======================= */
+.upload {
+  margin-bottom: 20px;
+}
+
+.upload input {
+  display: none;
+}
+
+.upload label {
+  background: var(--accent);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-block;
+}
+
+/* =======================
+   GALLERY GRID
+======================= */
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 15px;
+}
+
+.gallery img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 10px;
+  cursor: pointer;
+  background: var(--card);
+  transition: transform 0.3s;
+}
+
+.gallery img:hover {
+  transform: scale(1.05);
+}
+
+/* =======================
+   LIGHTBOX
+======================= */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.lightbox img {
+  max-width: 90%;
+  max-height: 90%;
+  border-radius: 12px;
+}
+
+/* =======================
+   RESPONSIVE
+======================= */
+@media (max-width: 600px) {
+  .header h1 {
+    font-size: 1.2rem;
+  }
+}
+</style>
 </head>
+
 <body>
 
-<header>
-    <h1>Photo Gallery</h1>
-    <div class="controls">
-        <select id="categoryFilter">
-            <option value="all">All</option>
-            <option value="nature">Nature</option>
-            <option value="city">City</option>
-            <option value="people">People</option>
-        </select>
+<div class="container">
+  <div class="header">
+    <h1>📸 Image Gallery</h1>
 
-        <input type="file" id="upload" accept="image/*">
-        <button id="darkModeToggle">🌙 Dark Mode</button>
+    <div class="toggle" onclick="toggleDark()">
+      <div class="toggle-circle" id="toggleIcon">☀️</div>
     </div>
-</header>
+  </div>
 
-<main class="gallery" id="gallery">
-    <img src="images/nature1.jpg" data-category="nature">
-    <img src="images/nature2.jpg" data-category="nature">
-    <img src="images/city1.jpg" data-category="city">
-    <img src="images/people1.jpg" data-category="people">
-</main>
+  <div class="upload">
+    <label>
+      📤 Upload Images
+      <input type="file" accept="image/*" multiple onchange="addImages(event)">
+    </label>
+  </div>
 
-<!-- Lightbox -->
-<div class="lightbox" id="lightbox">
-    <span class="close">&times;</span>
-    <img id="lightboxImg">
+  <div class="gallery" id="gallery"></div>
 </div>
 
-<script src="script.js"></script>
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <img id="lightboxImg">
+</div>
+
+<script>
+/* =======================
+   DARK MODE
+======================= */
+function toggleDark() {
+  document.body.classList.toggle("dark");
+  document.getElementById("toggleIcon").textContent =
+    document.body.classList.contains("dark") ? "🌙" : "☀️";
+}
+
+/* =======================
+   IMAGE UPLOAD
+======================= */
+function addImages(event) {
+  const gallery = document.getElementById("gallery");
+  [...event.target.files].forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = document.createElement("img");
+      img.src = e.target.result;
+      img.onclick = () => openLightbox(img.src);
+      gallery.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/* =======================
+   LIGHTBOX
+======================= */
+function openLightbox(src) {
+  document.getElementById("lightboxImg").src = src;
+  document.getElementById("lightbox").style.display = "flex";
+}
+
+function closeLightbox() {
+  document.getElementById("lightbox").style.display = "none";
+}
+</script>
+
 </body>
 </html>
-
-
