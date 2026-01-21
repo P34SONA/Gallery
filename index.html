@@ -1,265 +1,209 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Advanced Photo Gallery</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Photo Gallery</title>
+  <style>
+    :root {
+      --bg-color: #f4f4f4;
+      --card-bg: #ffffff;
+      --text-color: #222;
+      --accent: #4f46e5;
+    }
 
-<style>
-/* ===== THEME VARIABLES ===== */
-:root {
-    --bg: #ffffff;
-    --text: #222;
-    --card: #f4f4f4;
-    --overlay: rgba(0,0,0,0.85);
-}
+    body.dark {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --text-color: #e5e7eb;
+      --accent: #22d3ee;
+    }
 
-body.dark {
-    --bg: #121212;
-    --text: #f1f1f1;
-    --card: #1e1e1e;
-    --overlay: rgba(0,0,0,0.95);
-}
+    * {
+      box-sizing: border-box;
+      transition: background-color 0.4s ease, color 0.4s ease;
+    }
 
-/* ===== BASE ===== */
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    transition: background 0.4s ease, color 0.4s ease;
-}
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+    }
 
-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 20px;
-    background: var(--card);
-    gap: 10px;
-}
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      gap: 1rem;
+    }
 
-button {
-    padding: 8px 14px;
-    border: none;
-    border-radius: 20px;
-    cursor: pointer;
-    background: linear-gradient(135deg, #007bff, #00c6ff);
-    color: #fff;
-    transition: transform 0.3s ease;
-}
+    h1 { margin: 0; }
 
-button:hover {
-    transform: scale(1.1);
-}
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
 
-input[type="file"] {
-    display: none;
-}
+    input[type=file] {
+      display: none;
+    }
 
-/* ===== GALLERY ===== */
-.gallery {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 15px;
-    padding: 20px;
-}
+    .upload-btn {
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+      background: var(--accent);
+      color: white;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
 
-.gallery-item {
-    background: var(--card);
-    border-radius: 12px;
-    overflow: hidden;
-    cursor: pointer;
-    transition: transform 0.3s ease;
-}
+    /* Toggle */
+    .toggle {
+      width: 52px;
+      height: 28px;
+      background: var(--card-bg);
+      border-radius: 50px;
+      position: relative;
+      cursor: pointer;
+    }
 
-.gallery-item:hover {
-    transform: scale(1.05);
-}
+    .toggle::before {
+      content: "";
+      width: 22px;
+      height: 22px;
+      background: var(--accent);
+      border-radius: 50%;
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      transition: transform 0.4s ease;
+    }
 
-.gallery-item img {
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
-}
+    body.dark .toggle::before {
+      transform: translateX(24px);
+    }
 
-/* ===== MODAL ===== */
-.modal {
-    position: fixed;
-    inset: 0;
-    background: var(--overlay);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.4s ease;
-}
+    main { padding: 1.5rem; }
 
-.modal.active {
-    opacity: 1;
-    pointer-events: auto;
-}
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem;
+    }
 
-.modal img {
-    max-width: 90%;
-    max-height: 90%;
-    border-radius: 10px;
-    transition: transform 0.3s ease;
-}
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+    }
 
-.controls {
-    position: absolute;
-    bottom: 30px;
-    display: flex;
-    gap: 15px;
-}
+    .card img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+    }
 
-.control-btn {
-    font-size: 18px;
-    padding: 10px 14px;
-    border-radius: 50%;
-}
+    /* Modal */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
 
-.nav {
-    position: absolute;
-    top: 50%;
-    font-size: 40px;
-    color: white;
-    cursor: pointer;
-    user-select: none;
-}
+    .modal img {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 12px;
+    }
 
-.prev { left: 30px; }
-.next { right: 30px; }
-
-.close {
-    position: absolute;
-    top: 20px;
-    right: 30px;
-    font-size: 30px;
-    cursor: pointer;
-    color: white;
-}
-</style>
+    .modal.show {
+      display: flex;
+    }
+  </style>
 </head>
-
 <body>
-
-<header>
-    <h2>📸 Photo Gallery</h2>
-    <div>
-        <button id="themeToggle">🌙</button>
-        <label for="upload">
-            <button>📤 Upload</button>
-        </label>
-        <input type="file" id="upload" accept="image/*" multiple>
-    </div>
-</header>
-
-<main class="gallery" id="gallery">
-    <div class="gallery-item"><img src="https://picsum.photos/600/400?1"></div>
-    <div class="gallery-item"><img src="https://picsum.photos/600/400?2"></div>
-    <div class="gallery-item"><img src="https://picsum.photos/600/400?3"></div>
-</main>
-
-<!-- MODAL -->
-<div class="modal" id="modal">
-    <span class="close" id="close">&times;</span>
-    <span class="nav prev" id="prev">❮</span>
-    <img id="modalImg">
-    <span class="nav next" id="next">❯</span>
-
+  <header>
+    <h1>My Gallery</h1>
     <div class="controls">
-        <button class="control-btn" id="zoomIn">➕</button>
-        <button class="control-btn" id="zoomOut">➖</button>
-        <button class="control-btn" id="fullscreen">⛶</button>
+      <label class="upload-btn">
+        Upload
+        <input type="file" id="upload" accept="image/*" />
+      </label>
+      <div class="toggle" id="themeToggle"></div>
     </div>
-</div>
+  </header>
 
-<script>
-/* ===== THEME (localStorage) ===== */
-const body = document.body;
-const themeBtn = document.getElementById("themeToggle");
+  <main>
+    <section class="gallery" id="gallery"></section>
+  </main>
 
-if (localStorage.getItem("theme") === "dark") {
-    body.classList.add("dark");
-}
+  <div class="modal" id="modal">
+    <img id="modalImg" />
+  </div>
 
-themeBtn.onclick = () => {
-    body.classList.toggle("dark");
-    localStorage.setItem("theme", body.classList.contains("dark") ? "dark" : "light");
-};
+  <script>
+    const gallery = document.getElementById("gallery");
+    const upload = document.getElementById("upload");
+    const modal = document.getElementById("modal");
+    const modalImg = document.getElementById("modalImg");
 
-/* ===== GALLERY LOGIC ===== */
-const gallery = document.getElementById("gallery");
-const modal = document.getElementById("modal");
-const modalImg = document.getElementById("modalImg");
-let images = [];
-let index = 0;
-let scale = 1;
+    const STORAGE_KEY = "my_gallery_images";
 
-function refreshImages() {
-    images = document.querySelectorAll(".gallery-item img");
-    images.forEach((img, i) => {
-        img.onclick = () => openModal(i);
+    function loadImages() {
+      const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      gallery.innerHTML = "";
+      data.forEach(src => addCard(src));
+    }
+
+    function saveImage(src) {
+      const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      data.push(src);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function addCard(src) {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `<img src="${src}" />`;
+      card.onclick = () => openModal(src);
+      gallery.appendChild(card);
+    }
+
+    upload.addEventListener("change", () => {
+      const file = upload.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = e => {
+        saveImage(e.target.result);
+        addCard(e.target.result);
+      };
+      reader.readAsDataURL(file);
+      upload.value = "";
     });
-}
-refreshImages();
 
-/* ===== MODAL ===== */
-function openModal(i) {
-    index = i;
-    modal.classList.add("active");
-    modalImg.src = images[index].src;
-    scale = 1;
-    modalImg.style.transform = "scale(1)";
-}
+    function openModal(src) {
+      modalImg.src = src;
+      modal.classList.add("show");
+    }
 
-document.getElementById("close").onclick = () => modal.classList.remove("active");
-
-/* ===== SLIDER ===== */
-document.getElementById("next").onclick = () => {
-    index = (index + 1) % images.length;
-    modalImg.src = images[index].src;
-};
-
-document.getElementById("prev").onclick = () => {
-    index = (index - 1 + images.length) % images.length;
-    modalImg.src = images[index].src;
-};
-
-/* ===== ZOOM ===== */
-document.getElementById("zoomIn").onclick = () => {
-    scale += 0.2;
-    modalImg.style.transform = `scale(${scale})`;
-};
-
-document.getElementById("zoomOut").onclick = () => {
-    scale = Math.max(1, scale - 0.2);
-    modalImg.style.transform = `scale(${scale})`;
-};
-
-/* ===== FULLSCREEN ===== */
-document.getElementById("fullscreen").onclick = () => {
-    if (modalImg.requestFullscreen) modalImg.requestFullscreen();
-};
-
-/* ===== UPLOAD ===== */
-document.getElementById("upload").addEventListener("change", e => {
-    [...e.target.files].forEach(file => {
-        const reader = new FileReader();
-        reader.onload = () => {
-            const div = document.createElement("div");
-            div.className = "gallery-item";
-            div.innerHTML = `<img src="${reader.result}">`;
-            gallery.appendChild(div);
-            refreshImages();
-        };
-        reader.readAsDataURL(file);
+    modal.addEventListener("click", () => {
+      modal.classList.remove("show");
     });
-});
-</script>
 
+    // Theme toggle
+    const toggle = document.getElementById("themeToggle");
+    toggle.onclick = () => document.body.classList.toggle("dark");
+
+    loadImages();
+  </script>
 </body>
 </html>
