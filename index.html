@@ -1,235 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Helpdesk Image Gallery</title>
+  <meta charset="UTF-8">
+  <title>Animated Image Gallery</title>
 
-<style>
-/* =======================
-   CSS VARIABLES (EASY CUSTOMIZATION)
-======================= */
-:root {
-  --bg: #f4f4f4;
-  --text: #111;
-  --card: #ffffff;
-  --accent: #4f46e5;
-}
+  <style>
+    :root {
+      --bg-color: #ffffff;
+      --text-color: #000000;
+      --card-bg: #f2f2f2;
+      --accent: #4f46e5;
+    }
 
-body.dark {
-  --bg: #0f172a;
-  --text: #f8fafc;
-  --card: #1e293b;
-  --accent: #facc15;
-}
+    body.dark {
+      --bg-color: #121212;
+      --text-color: #ffffff;
+      --card-bg: #1e1e1e;
+    }
 
-/* =======================
-   GLOBAL STYLES
-======================= */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: system-ui, sans-serif;
-}
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      transition: background-color 0.4s, color 0.4s;
+    }
 
-body {
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  transition: background 0.4s, color 0.4s;
-}
+    header {
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+      animation: slideDown 0.6s ease;
+    }
 
-.container {
-  max-width: 1200px;
-  margin: auto;
-  padding: 20px;
-}
+    @keyframes slideDown {
+      from { transform: translateY(-100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
 
-/* =======================
-   HEADER
-======================= */
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
+    button {
+      padding: 8px 14px;
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      background: var(--accent);
+      color: #fff;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
 
-.header h1 {
-  font-size: 1.5rem;
-}
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
 
-/* =======================
-   DARK MODE TOGGLE
-======================= */
-.toggle {
-  width: 60px;
-  height: 30px;
-  background: var(--card);
-  border-radius: 50px;
-  position: relative;
-  cursor: pointer;
-  box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
-}
+    .container {
+      padding: 20px;
+      animation: fadeIn 0.8s ease;
+    }
 
-.toggle-circle {
-  width: 26px;
-  height: 26px;
-  background: var(--accent);
-  border-radius: 50%;
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  color: #fff;
-  transition: transform 0.4s;
-}
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
 
-body.dark .toggle-circle {
-  transform: translateX(30px);
-}
+    .upload {
+      margin-bottom: 20px;
+    }
 
-/* =======================
-   UPLOAD BUTTON
-======================= */
-.upload {
-  margin-bottom: 20px;
-}
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 15px;
+    }
 
-.upload input {
-  display: none;
-}
-
-.upload label {
-  background: var(--accent);
-  color: #fff;
-  padding: 10px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  display: inline-block;
-}
-
-/* =======================
-   GALLERY GRID
-======================= */
-.gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 15px;
-}
-
-.gallery img {
-  width: 100%;
-  height: 160px;
-  object-fit: cover;
-  border-radius: 10px;
-  cursor: pointer;
-  background: var(--card);
-  transition: transform 0.3s;
-}
-
-.gallery img:hover {
-  transform: scale(1.05);
-}
-
-/* =======================
-   LIGHTBOX
-======================= */
-.lightbox {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.85);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-}
-
-.lightbox img {
-  max-width: 90%;
-  max-height: 90%;
-  border-radius: 12px;
-}
-
-/* =======================
-   RESPONSIVE
-======================= */
-@media (max-width: 600px) {
-  .header h1 {
-    font-size: 1.2rem;
-  }
-}
-</style>
-</head>
-
-<body>
-
-<div class="container">
-  <div class="header">
-    <h1>📸 Image Gallery</h1>
-
-    <div class="toggle" onclick="toggleDark()">
-      <div class="toggle-circle" id="toggleIcon">☀️</div>
-    </div>
-  </div>
-
-  <div class="upload">
-    <label>
-      📤 Upload Images
-      <input type="file" accept="image/*" multiple onchange="addImages(event)">
-    </label>
-  </div>
-
-  <div class="gallery" id="gallery"></div>
-</div>
-
-<div class="lightbox" id="lightbox" onclick="closeLightbox()">
-  <img id="lightboxImg">
-</div>
-
-<script>
-/* =======================
-   DARK MODE
-======================= */
-function toggleDark() {
-  document.body.classList.toggle("dark");
-  document.getElementById("toggleIcon").textContent =
-    document.body.classList.contains("dark") ? "🌙" : "☀️";
-}
-
-/* =======================
-   IMAGE UPLOAD
-======================= */
-function addImages(event) {
-  const gallery = document.getElementById("gallery");
-  [...event.target.files].forEach(file => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      const img = document.createElement("img");
-      img.src = e.target.result;
-      img.onclick = () => openLightbox(img.src);
-      gallery.appendChild(img);
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-/* =======================
-   LIGHTBOX
-======================= */
-function openLightbox(src) {
-  document.getElementById("lightboxImg").src = src;
-  document.getElementById("lightbox").style.display = "flex";
-}
-
-function closeLightbox() {
-  document.getElementById("lightbox").style.display = "none";
-}
-</script>
-
-</body>
-</html>
+    .gallery img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 12px;
+      background: var(--card-bg);
+      animation: zoomIn 0.5s ease;
+      trans
