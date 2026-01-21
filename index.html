@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Helpdesk Gallery</title>
+  <title>Photo Gallery</title>
   <style>
     :root {
-      --bg-color: ##e5cdcd;
+      --bg-color: #f5f3ef; /* dirty white */
       --card-bg: #ffffff;
-      --text-color: #222;
+      --text-color: #2a2a2a;
       --accent: #4f46e5;
       --danger: #ef4444;
     }
 
     body.dark {
-      --bg-color: #0f172a;
-      --card-bg: #1e293b;
-      --text-color: #e5e7eb;
+      --bg-color: #1c1c1c; /* warm dark */
+      --card-bg: #262626;
+      --text-color: #eaeaea;
       --accent: #22d3ee;
     }
 
@@ -100,9 +100,9 @@
 </head>
 <body>
   <header>
-    <h1>Gallery</h1>
+    <h1>My Gallery</h1>
     <div class="controls">
-      <label class="upload-btn">Upload<input type="file" id="upload" accept="image/*"></label>
+      <label class="upload-btn">Upload<input type="file" id="upload" accept="image/*" multiple></label>
       <div class="toggle" id="themeToggle"></div>
     </div>
   </header>
@@ -128,18 +128,43 @@
     const prevBtn = document.querySelector('.prev');
     const nextBtn = document.querySelector('.next');
 
-    const STORAGE_KEY = "my_gallery_images";
+    const DB_NAME = "GalleryDB";
+    const STORE_NAME = "images";
+    let db;
     let images = [];
     let currentIndex = 0;
 
-    function loadImages() {
-      images = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-      gallery.innerHTML = "";
-      images.forEach((src, index) => addCard(src, index));
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, 1);
+        request.onupgradeneeded = e => {
+          const db = e.target.result;
+          db.createObjectStore(STORE_NAME, { autoIncrement: true });
+        };
+        request.onsuccess = e => resolve(e.target.result);
+        request.onerror = e => reject(e);
+      });
     }
 
-    function saveImages() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(images));
+    async function loadImages() {
+      db = await openDB();
+      images = [];
+      gallery.innerHTML = "";
+      const tx = db.transaction(STORE_NAME, "readonly");
+      const store = tx.objectStore(STORE_NAME);
+      store.openCursor().onsuccess = e => {
+        const cursor = e.target.result;
+        if (cursor) {
+          images.push(cursor.value);
+          addCard(cursor.value, images.length - 1);
+          cursor.continue();
+        }
+      };
+    }
+
+    function saveImageToDB(src) {
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      tx.objectStore(STORE_NAME).add(src);
     }
 
     function addCard(src, index) {
@@ -156,8 +181,9 @@
       del.onclick = (e) => {
         e.stopPropagation();
         if (confirm("Delete this image?")) {
-          images.splice(index, 1);
-          saveImages();
+          const tx = db.transaction(STORE_NAME, "readwrite");
+          const store = tx.objectStore(STORE_NAME);
+          store.delete(index + 1);
           loadImages();
         }
       };
@@ -167,16 +193,16 @@
     }
 
     upload.addEventListener("change", () => {
-      const file = upload.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = e => {
-        images.push(e.target.result);
-        saveImages();
-        loadImages();
-      };
-      reader.readAsDataURL(file);
+      const files = Array.from(upload.files);
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          images.push(e.target.result);
+          saveImageToDB(e.target.result);
+          addCard(e.target.result, images.length - 1);
+        };
+        reader.readAsDataURL(file);
+      });
       upload.value = "";
     });
 
