@@ -1,127 +1,264 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Photo Gallery</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>Advanced Photo Gallery</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <style>
-        /* ===== CSS VARIABLES FOR THEMES ===== */
-        :root {
-            --bg-color: #ffffff;
-            --text-color: #222;
-            --card-bg: #f4f4f4;
-        }
+<style>
+/* ===== THEME VARIABLES ===== */
+:root {
+    --bg: #ffffff;
+    --text: #222;
+    --card: #f4f4f4;
+    --overlay: rgba(0,0,0,0.85);
+}
 
-        body.dark {
-            --bg-color: #121212;
-            --text-color: #f1f1f1;
-            --card-bg: #1e1e1e;
-        }
+body.dark {
+    --bg: #121212;
+    --text: #f1f1f1;
+    --card: #1e1e1e;
+    --overlay: rgba(0,0,0,0.95);
+}
 
-        /* ===== GENERAL STYLES ===== */
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            transition: background 0.3s, color 0.3s;
-        }
+/* ===== BASE ===== */
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    transition: background 0.4s ease, color 0.4s ease;
+}
 
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 20px;
-            background: var(--card-bg);
-        }
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: var(--card);
+    gap: 10px;
+}
 
-        h1 {
-            margin: 0;
-        }
+button {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    background: linear-gradient(135deg, #007bff, #00c6ff);
+    color: #fff;
+    transition: transform 0.3s ease;
+}
 
-        button {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            background: #007bff;
-            color: white;
-            font-size: 14px;
-        }
+button:hover {
+    transform: scale(1.1);
+}
 
-        button:hover {
-            opacity: 0.9;
-        }
+input[type="file"] {
+    display: none;
+}
 
-        /* ===== GALLERY ===== */
-        .gallery {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-            padding: 20px;
-        }
+/* ===== GALLERY ===== */
+.gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    padding: 20px;
+}
 
-        .gallery-item {
-            background: var(--card-bg);
-            border-radius: 10px;
-            overflow: hidden;
-            transition: transform 0.3s;
-        }
+.gallery-item {
+    background: var(--card);
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
 
-        .gallery-item:hover {
-            transform: scale(1.05);
-        }
+.gallery-item:hover {
+    transform: scale(1.05);
+}
 
-        .gallery-item img {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-            display: block;
-        }
+.gallery-item img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
 
-        footer {
-            text-align: center;
-            padding: 10px;
-            font-size: 14px;
-            opacity: 0.7;
-        }
-    </style>
+/* ===== MODAL ===== */
+.modal {
+    position: fixed;
+    inset: 0;
+    background: var(--overlay);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+}
+
+.modal.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal img {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 10px;
+    transition: transform 0.3s ease;
+}
+
+.controls {
+    position: absolute;
+    bottom: 30px;
+    display: flex;
+    gap: 15px;
+}
+
+.control-btn {
+    font-size: 18px;
+    padding: 10px 14px;
+    border-radius: 50%;
+}
+
+.nav {
+    position: absolute;
+    top: 50%;
+    font-size: 40px;
+    color: white;
+    cursor: pointer;
+    user-select: none;
+}
+
+.prev { left: 30px; }
+.next { right: 30px; }
+
+.close {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    font-size: 30px;
+    cursor: pointer;
+    color: white;
+}
+</style>
 </head>
+
 <body>
 
 <header>
-    <h1>My Photo Gallery</h1>
-    <button id="themeToggle">🌙 Dark Mode</button>
+    <h2>📸 Photo Gallery</h2>
+    <div>
+        <button id="themeToggle">🌙</button>
+        <label for="upload">
+            <button>📤 Upload</button>
+        </label>
+        <input type="file" id="upload" accept="image/*" multiple>
+    </div>
 </header>
 
-<main class="gallery">
-    <!-- Replace image URLs with your own -->
-    <div class="gallery-item"><img src="https://picsum.photos/400/300?1" alt=""></div>
-    <div class="gallery-item"><img src="https://picsum.photos/400/300?2" alt=""></div>
-    <div class="gallery-item"><img src="https://picsum.photos/400/300?3" alt=""></div>
-    <div class="gallery-item"><img src="https://picsum.photos/400/300?4" alt=""></div>
-    <div class="gallery-item"><img src="https://picsum.photos/400/300?5" alt=""></div>
-    <div class="gallery-item"><img src="https://picsum.photos/400/300?6" alt=""></div>
+<main class="gallery" id="gallery">
+    <div class="gallery-item"><img src="https://picsum.photos/600/400?1"></div>
+    <div class="gallery-item"><img src="https://picsum.photos/600/400?2"></div>
+    <div class="gallery-item"><img src="https://picsum.photos/600/400?3"></div>
 </main>
 
-<footer>
-    © 2026 My Gallery
-</footer>
+<!-- MODAL -->
+<div class="modal" id="modal">
+    <span class="close" id="close">&times;</span>
+    <span class="nav prev" id="prev">❮</span>
+    <img id="modalImg">
+    <span class="nav next" id="next">❯</span>
+
+    <div class="controls">
+        <button class="control-btn" id="zoomIn">➕</button>
+        <button class="control-btn" id="zoomOut">➖</button>
+        <button class="control-btn" id="fullscreen">⛶</button>
+    </div>
+</div>
 
 <script>
-    const toggleBtn = document.getElementById("themeToggle");
-    const body = document.body;
+/* ===== THEME (localStorage) ===== */
+const body = document.body;
+const themeBtn = document.getElementById("themeToggle");
 
-    toggleBtn.addEventListener("click", () => {
-        body.classList.toggle("dark");
+if (localStorage.getItem("theme") === "dark") {
+    body.classList.add("dark");
+}
 
-        if (body.classList.contains("dark")) {
-            toggleBtn.textContent = "☀️ Light Mode";
-        } else {
-            toggleBtn.textContent = "🌙 Dark Mode";
-        }
+themeBtn.onclick = () => {
+    body.classList.toggle("dark");
+    localStorage.setItem("theme", body.classList.contains("dark") ? "dark" : "light");
+};
+
+/* ===== GALLERY LOGIC ===== */
+const gallery = document.getElementById("gallery");
+const modal = document.getElementById("modal");
+const modalImg = document.getElementById("modalImg");
+let images = [];
+let index = 0;
+let scale = 1;
+
+function refreshImages() {
+    images = document.querySelectorAll(".gallery-item img");
+    images.forEach((img, i) => {
+        img.onclick = () => openModal(i);
     });
+}
+refreshImages();
+
+/* ===== MODAL ===== */
+function openModal(i) {
+    index = i;
+    modal.classList.add("active");
+    modalImg.src = images[index].src;
+    scale = 1;
+    modalImg.style.transform = "scale(1)";
+}
+
+document.getElementById("close").onclick = () => modal.classList.remove("active");
+
+/* ===== SLIDER ===== */
+document.getElementById("next").onclick = () => {
+    index = (index + 1) % images.length;
+    modalImg.src = images[index].src;
+};
+
+document.getElementById("prev").onclick = () => {
+    index = (index - 1 + images.length) % images.length;
+    modalImg.src = images[index].src;
+};
+
+/* ===== ZOOM ===== */
+document.getElementById("zoomIn").onclick = () => {
+    scale += 0.2;
+    modalImg.style.transform = `scale(${scale})`;
+};
+
+document.getElementById("zoomOut").onclick = () => {
+    scale = Math.max(1, scale - 0.2);
+    modalImg.style.transform = `scale(${scale})`;
+};
+
+/* ===== FULLSCREEN ===== */
+document.getElementById("fullscreen").onclick = () => {
+    if (modalImg.requestFullscreen) modalImg.requestFullscreen();
+};
+
+/* ===== UPLOAD ===== */
+document.getElementById("upload").addEventListener("change", e => {
+    [...e.target.files].forEach(file => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const div = document.createElement("div");
+            div.className = "gallery-item";
+            div.innerHTML = `<img src="${reader.result}">`;
+            gallery.appendChild(div);
+            refreshImages();
+        };
+        reader.readAsDataURL(file);
+    });
+});
 </script>
 
 </body>
