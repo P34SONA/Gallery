@@ -1,228 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Realtime Firebase Gallery</title>
-
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
-
-  <style>
-    :root {
-      --bg-color: #f5f3ef;
-      --card-bg: #ffffff;
-      --text-color: #2a2a2a;
-      --accent: #4f46e5;
-      --danger: #ef4444;
-    }
-
-    body.dark {
-      --bg-color: #1c1c1c;
-      --card-bg: #262626;
-      --text-color: #eaeaea;
-      --accent: #22d3ee;
-    }
-
-    * { box-sizing: border-box; transition: background-color 0.4s ease, color 0.4s ease; }
-
-    body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg-color); color: var(--text-color); }
-
-    header {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 1rem 1.5rem; gap: 1rem;
-    }
-
-    .controls { display: flex; gap: 1rem; align-items: center; }
-
-    input[type=file] { display: none; }
-
-    .upload-btn {
-      padding: 0.4rem 0.8rem; border-radius: 8px;
-      background: var(--accent); color: white; cursor: pointer;
-      font-size: 0.85rem;
-    }
-
-    .toggle {
-      width: 52px; height: 28px; background: var(--card-bg);
-      border-radius: 50px; position: relative; cursor: pointer;
-    }
-
-    .toggle::before {
-      content: ""; width: 22px; height: 22px; background: var(--accent);
-      border-radius: 50%; position: absolute; top: 3px; left: 3px;
-      transition: transform 0.4s ease;
-    }
-
-    body.dark .toggle::before { transform: translateX(24px); }
-
-    main { padding: 1.5rem; }
-
-    .gallery {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem;
-    }
-
-    .card {
-      background: var(--card-bg); border-radius: 12px; overflow: hidden; cursor: pointer; position: relative;
-    }
-
-    .card img { width: 100%; height: 180px; object-fit: cover; }
-
-    .delete-btn {
-      position: absolute; top: 6px; right: 6px;
-      background: var(--danger); color: white; border: none;
-      border-radius: 50%; width: 26px; height: 26px; cursor: pointer;
-    }
-
-    /* Modal */
-    .modal {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-      display: none; align-items: center; justify-content: center; z-index: 100;
-    }
-
-    .modal.show { display: flex; }
-
-    .modal img { max-width: 90vw; max-height: 90vh; border-radius: 12px; }
-
-    .nav-btn {
-      position: absolute; top: 50%; transform: translateY(-50%);
-      background: rgba(0,0,0,0.6); color: white; border: none;
-      font-size: 24px; width: 40px; height: 40px; cursor: pointer;
-      border-radius: 50%;
-    }
-
-    .prev { left: 20px; }
-    .next { right: 20px; }
-  </style>
+  <meta charset="UTF-8">
+  <title>Public Photo Upload</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<header>
-  <h1>Realtime Gallery</h1>
-  <div class="controls">
-    <label class="upload-btn">Upload<input type="file" id="upload" accept="image/*" multiple></label>
-    <div class="toggle" id="themeToggle"></div>
-  </div>
-</header>
+<h1>📸 Public Photo Upload</h1>
 
-<main>
-  <section class="gallery" id="gallery"></section>
-</main>
+<input type="file" id="fileInput" accept="image/*">
+<button onclick="uploadImage()">Upload</button>
 
-<div class="modal" id="modal">
-  <button class="nav-btn prev">❮</button>
-  <img id="modalImg">
-  <button class="nav-btn next">❯</button>
-</div>
+<div class="gallery" id="gallery"></div>
 
-<script>
-  /* 🔥 Firebase Config – REPLACE WITH YOUR OWN */
-  const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-  };
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-  firebase.initializeApp(firebaseConfig);
-
-  const db = firebase.firestore();
-  const storage = firebase.storage();
-
-  const gallery = document.getElementById("gallery");
-  const upload = document.getElementById("upload");
-  const modal = document.getElementById("modal");
-  const modalImg = document.getElementById("modalImg");
-
-  let images = [];
-  let currentIndex = 0;
-
-  /* 🔧 Image Compression */
-  function compressImage(file, quality = 0.7) {
-    return new Promise(resolve => {
-      const img = new Image();
-      const reader = new FileReader();
-      reader.onload = e => img.src = e.target.result;
-      reader.readAsDataURL(file);
-
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const scale = Math.min(1200 / img.width, 1);
-        canvas.width = img.width * scale;
-        canvas.height = img.height * scale;
-        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob(blob => resolve(blob), 'image/jpeg', quality);
-      };
-    });
-  }
-
-  /* 🔄 Realtime Listener */
-  db.collection("images").orderBy("created").onSnapshot(snapshot => {
-    images = [];
-    gallery.innerHTML = "";
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      images.push({ id: doc.id, url: data.url });
-      addCard(doc.id, data.url);
-    });
-  });
-
-  function addCard(id, src) {
-    const card = document.createElement("div");
-    card.className = "card";
-
-    const img = document.createElement("img");
-    img.src = src;
-    img.onclick = () => openModal(images.findIndex(i => i.id === id));
-
-    const del = document.createElement("button");
-    del.className = "delete-btn";
-    del.textContent = "🗑️";
-    del.onclick = async e => {
-      e.stopPropagation();
-      await db.collection("images").doc(id).delete();
-    };
-
-    card.append(img, del);
-    gallery.appendChild(card);
-  }
-
-  upload.addEventListener("change", async () => {
-    for (const file of upload.files) {
-      const compressed = await compressImage(file);
-      const ref = storage.ref(`images/${Date.now()}-${file.name}`);
-      await ref.put(compressed);
-      const url = await ref.getDownloadURL();
-      await db.collection("images").add({ url, created: Date.now() });
-    }
-    upload.value = "";
-  });
-
-  function openModal(index) {
-    currentIndex = index;
-    modalImg.src = images[currentIndex].url;
-    modal.classList.add("show");
-  }
-
-  function closeModal() { modal.classList.remove("show"); }
-  function next() { currentIndex = (currentIndex + 1) % images.length; modalImg.src = images[currentIndex].url; }
-  function prev() { currentIndex = (currentIndex - 1 + images.length) % images.length; modalImg.src = images[currentIndex].url; }
-
-  document.querySelector('.next').onclick = next;
-  document.querySelector('.prev').onclick = prev;
-
-  modal.onclick = e => { if (e.target === modal) closeModal(); };
-
-  document.addEventListener('keydown', e => {
-    if (!modal.classList.contains('show')) return;
-    if (e.key === 'Escape') closeModal();
-    if (e.key === 'ArrowRight') next();
-    if (e.key === 'ArrowLeft') prev();
-  });
-
-  document.getElementById("themeToggle").onclick = () => document.body.classList.toggle("dark");
-</script>
+<script src="script.js"></script>
 </body>
 </html>
