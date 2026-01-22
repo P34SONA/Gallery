@@ -1,166 +1,230 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Public Photo Gallery</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Community Photo Gallery</title>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
   <style>
     :root {
-      --bg: #ffffff;
-      --text: #111;
-      --card: #f3f3f3;
-      --accent: #4f46e5;
-    }
-
-    body.dark {
-      --bg: #0f172a;
-      --text: #e5e7eb;
-      --card: #1e293b;
-      --accent: #22d3ee;
-    }
-
-    * {
-      box-sizing: border-box;
-      transition: background 0.4s, color 0.4s;
+      --light-gradient: linear-gradient(135deg, #e0eafc, #cfdef3);
+      --dark-gradient: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      --card-light: #ffffff;
+      --card-dark: #1e1e1e;
+      --text-light: #111;
+      --text-dark: #f5f5f5;
+      --accent: #4f8cff;
     }
 
     body {
       margin: 0;
-      font-family: system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
+      background: var(--light-gradient);
+      color: var(--text-light);
+      transition: background 0.8s ease, color 0.4s ease;
+    }
+
+    body.dark {
+      background: var(--dark-gradient);
+      color: var(--text-dark);
     }
 
     header {
+      padding: 1.2rem 1.5rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 1rem 1.5rem;
-      background: var(--card);
     }
 
     h1 {
-      margin: 0;
       font-size: 1.4rem;
+      margin: 0;
     }
 
-    /* Toggle Switch */
-    .toggle {
-      width: 52px;
-      height: 26px;
-      background: #cbd5e1;
-      border-radius: 20px;
+    /* Mobile-style toggle */
+    .switch {
       position: relative;
-      cursor: pointer;
+      display: inline-block;
+      width: 52px;
+      height: 28px;
     }
 
-    .toggle::before {
-      content: "";
-      width: 22px;
-      height: 22px;
-      background: white;
+    .switch input { display: none; }
+
+    .slider {
       position: absolute;
-      top: 2px;
-      left: 2px;
+      cursor: pointer;
+      inset: 0;
+      background-color: #ccc;
+      transition: 0.4s;
+      border-radius: 28px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 22px;
+      width: 22px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.4s;
       border-radius: 50%;
-      transition: transform 0.4s ease;
     }
 
-    body.dark .toggle {
-      background: var(--accent);
+    input:checked + .slider {
+      background-color: var(--accent);
     }
 
-    body.dark .toggle::before {
-      transform: translateX(26px);
+    input:checked + .slider:before {
+      transform: translateX(24px);
     }
 
     main {
-      padding: 1.5rem;
+      padding: 1rem 1.5rem 3rem;
     }
 
-    .upload-box {
-      margin-bottom: 1.5rem;
+    /* Floating modern upload button */
+    .upload-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50px;
+      padding: 14px 22px;
+      font-size: 0.95rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
 
-    input[type="file"] {
-      padding: 0.5rem;
+    .upload-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 30px rgba(0,0,0,0.25);
     }
+
+    .upload-btn input { display: none; }
 
     .gallery {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
       gap: 1rem;
     }
 
     .photo {
-      background: var(--card);
-      border-radius: 12px;
+      background: var(--card-light);
+      border-radius: 16px;
       overflow: hidden;
+      transition: background 0.5s ease, transform 0.3s ease;
+    }
+
+    body.dark .photo {
+      background: var(--card-dark);
+    }
+
+    .photo:hover {
+      transform: scale(1.03);
     }
 
     .photo img {
       width: 100%;
-      height: 100%;
-      object-fit: cover;
       display: block;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.85rem;
+      opacity: 0.6;
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>📷 Public Photo Gallery</h1>
-    <div class="toggle" id="themeToggle"></div>
-  </header>
 
-  <main>
-    <div class="upload-box">
-      <input type="file" id="imageInput" accept="image/*">
-    </div>
+<header>
+  <h1>📸 Community Gallery</h1>
+  <label class="switch">
+    <input type="checkbox" id="themeToggle">
+    <span class="slider"></span>
+  </label>
+</header>
 
-    <div class="gallery" id="gallery"></div>
-  </main>
+<main>
+  <div class="gallery" id="gallery"></div>
+</main>
 
-  <script>
-    const input = document.getElementById("imageInput");
-    const gallery = document.getElementById("gallery");
-    const toggle = document.getElementById("themeToggle");
+<footer>
+  Photos are shared live with everyone
+</footer>
 
-    // Load theme
-    if (localStorage.getItem("theme") === "dark") {
-      document.body.classList.add("dark");
-    }
+<label class="upload-btn">
+  ➕ Upload
+  <input type="file" id="uploadInput" accept="image/*">
+</label>
 
-    toggle.onclick = () => {
-      document.body.classList.toggle("dark");
-      localStorage.setItem(
-        "theme",
-        document.body.classList.contains("dark") ? "dark" : "light"
-      );
-    };
+<script>
+  /* 🔥 Firebase Configuration (REPLACE WITH YOUR OWN) */
+  const firebaseConfig = {
+    apiKey: "AIzaSyDFBnjh-7-nF_zhdpP9xz4ixEw8HFVPl7w",
+    authDomain: "gallery-1b265.firebaseapp.com",
+    projectId: "gallery-1b265",
+    storageBucket: "gallery-1b265.firebasestorage.app",
+    databaseURL: "https://gallery-1b265-default-rtdb.firebaseio.com",
+  };
 
-    // Load saved images
-    const savedImages = JSON.parse(localStorage.getItem("images") || "[]");
-    savedImages.forEach(addImageToGallery);
+  firebase.initializeApp(firebaseConfig);
+  const storage = firebase.storage();
+  const database = firebase.database();
 
-    // Upload image
-    input.addEventListener("change", () => {
-      const file = input.files[0];
-      if (!file) return;
+  const gallery = document.getElementById('gallery');
+  const uploadInput = document.getElementById('uploadInput');
+  const themeToggle = document.getElementById('themeToggle');
 
-      const reader = new FileReader();
-      reader.onload = () => {
-        savedImages.push(reader.result);
-        localStorage.setItem("images", JSON.stringify(savedImages));
-        addImageToGallery(reader.result);
-      };
-      reader.readAsDataURL(file);
+  /* Theme */
+  if (localStorage.getItem('theme') === 'dark') {
+    document.body.classList.add('dark');
+    themeToggle.checked = true;
+  }
+
+  themeToggle.addEventListener('change', () => {
+    document.body.classList.toggle('dark');
+    localStorage.setItem('theme', themeToggle.checked ? 'dark' : 'light');
+  });
+
+  /* Load photos in realtime */
+  database.ref('photos').on('child_added', snapshot => {
+    const img = document.createElement('img');
+    img.src = snapshot.val();
+    const div = document.createElement('div');
+    div.className = 'photo';
+    div.appendChild(img);
+    gallery.prepend(div);
+  });
+
+  /* Upload photo */
+  uploadInput.addEventListener('change', () => {
+    const file = uploadInput.files[0];
+    if (!file) return;
+
+    const ref = storage.ref('photos/' + Date.now() + '_' + file.name);
+    ref.put(file).then(() => {
+      ref.getDownloadURL().then(url => {
+        database.ref('photos').push(url);
+      });
     });
 
-    function addImageToGallery(src) {
-      const div = document.createElement("div");
-      div.className = "photo";
-      div.innerHTML = `<img src="${src}">`;
-      gallery.appendChild(div);
-    }
-  </script>
+    uploadInput.value = '';
+  });
+</script>
 </body>
 </html>
